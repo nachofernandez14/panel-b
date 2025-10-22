@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Proyecto Next.js Panel
 
-## Getting Started
+Este es un proyecto de Next.js moderno construido con TypeScript, Tailwind CSS y ESLint preconfigurado.
 
-First, run the development server:
+## 🛠️ Tecnologías
+
+- **Next.js 15** - Framework React con App Router
+- **TypeScript** - Tipado estático para JavaScript
+- **Tailwind CSS** - Framework de estilos utility-first
+- **ESLint** - Linter para mantener código limpio
+- **Turbopack** - Bundler ultrarrápido para desarrollo
+
+## 🚀 Comenzar
+
+Ejecuta el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre [http://localhost:3001](http://localhost:3001) en tu navegador para ver el resultado.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📁 Estructura del Proyecto
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+src/
+├── app/                # App Router (páginas y layouts)
+│   ├── globals.css     # Estilos globales
+│   ├── layout.tsx      # Layout principal
+│   └── page.tsx        # Página de inicio
+├── components/         # Componentes reutilizables
+│   ├── Button.tsx      # Componente de botón
+│   ├── Card.tsx        # Componente de tarjeta
+│   └── index.ts        # Barrel export
+└── lib/
+    └── utils.ts        # Utilidades (clsx + tailwind-merge)
+```
 
-## Learn More
+## 🎯 Scripts Disponibles
 
-To learn more about Next.js, take a look at the following resources:
+- `npm run dev` - Inicia el servidor de desarrollo
+- `npm run build` - Construye la aplicación para producción
+- `npm run start` - Ejecuta la aplicación en modo producción
+- `npm run lint` - Ejecuta ESLint
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 📚 Recursos de Aprendizaje
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Documentación de Next.js](https://nextjs.org/docs)
+- [Documentación de TypeScript](https://www.typescriptlang.org/docs/)
+- [Documentación de Tailwind CSS](https://tailwindcss.com/docs)
+- [Tutorial Interactivo de Next.js](https://nextjs.org/learn)
 
-## Deploy on Vercel
+## 🚀 Despliegue
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+La forma más fácil de desplegar tu aplicación Next.js es usar [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Consulta la [documentación de despliegue de Next.js](https://nextjs.org/docs/app/building-your-application/deploying) para más detalles.
+
+## ✨ Características Incluidas
+
+- ✅ TypeScript configurado
+- ✅ Tailwind CSS con configuración optimizada
+- ✅ ESLint con reglas de Next.js
+- ✅ Componentes ejemplo (Button, Card)
+- ✅ Utilidades de clases CSS (clsx + tailwind-merge)
+- ✅ Hot reload con Turbopack
+- ✅ Estructura de carpetas organizada

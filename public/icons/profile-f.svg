@@ -1,0 +1,15 @@
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <!-- Círculo de fondo -->
+  <circle cx="12" cy="12" r="12" fill="#4F46E5" stroke="#1E1B4B" stroke-width="1"/>
+  
+  <!-- Letra F -->
+  <text 
+    x="12" 
+    y="17" 
+    font-family="Arial, sans-serif" 
+    font-size="14" 
+    font-weight="bold" 
+    fill="white" 
+    text-anchor="middle"
+  >F</text>
+</svg>
