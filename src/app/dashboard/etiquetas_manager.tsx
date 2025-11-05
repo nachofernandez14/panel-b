@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import Layout from '../../components/Layout'
 
 interface Tag {
   id: string
@@ -136,7 +135,6 @@ export default function EtiquetasManager() {
   }
 
   return (
-    <Layout>
       <div className="min-h-screen bg-gray-100 p-6">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -283,6 +281,5 @@ export default function EtiquetasManager() {
           )}
         </div>
       </div>
-    </Layout>
   )
 }

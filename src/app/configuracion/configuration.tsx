@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Image from 'next/image'
 import { Layout } from "@/components"
+import WhatsAppQRModal from '../../components/WhatsAppQRModal'
 
 interface CuentaConectada {
     id: string
@@ -23,31 +24,25 @@ export default function ConfiguracionPage() {
         {
             id: '1',
             plataforma: 'whatsapp',
-            nombreUsuario: 'mi_negocio_whatsapp',
+            nombreUsuario: 'WhatsApp Bot',
             nombrePlataforma: 'WhatsApp Business',
-            conectada: true,
-            fechaConexion: '2024-10-20T10:30:00Z',
+            conectada: false,
             icono: '/icons/whatsapp.png',
-            colorPlataforma: 'bg-green-100',
-            webhook_url: 'https://api.panelbb.com/webhook/whatsapp',
-            api_token: 'wa_token_123...'
+            colorPlataforma: 'bg-green-100'
         },
         {
             id: '2',
             plataforma: 'instagram',
-            nombreUsuario: '@panelbb_oficial',
+            nombreUsuario: '@instagram_bot',
             nombrePlataforma: 'Instagram',
-            conectada: true,
-            fechaConexion: '2024-10-15T09:15:00Z',
+            conectada: false,
             icono: '/icons/instagram.png',
-            colorPlataforma: 'bg-pink-100',
-            webhook_url: 'https://api.panelbb.com/webhook/instagram',
-            api_token: 'ig_token_456...'
+            colorPlataforma: 'bg-pink-100'
         },
         {
             id: '3',
             plataforma: 'facebook',
-            nombreUsuario: 'Panel B&B',
+            nombreUsuario: 'Facebook Bot',
             nombrePlataforma: 'Facebook',
             conectada: false,
             icono: '/icons/facebook.png',
@@ -56,91 +51,126 @@ export default function ConfiguracionPage() {
         {
             id: '4',
             plataforma: 'telegram',
-            nombreUsuario: '@panelbb_bot',
+            nombreUsuario: '@telegram_bot',
             nombrePlataforma: 'Telegram',
-            conectada: true,
-            fechaConexion: '2024-10-18T14:20:00Z',
+            conectada: false,
             icono: '/icons/telegram.png',
-            colorPlataforma: 'bg-blue-100',
-            webhook_url: 'https://api.panelbb.com/webhook/telegram',
-            api_token: 'tg_token_789...'
+            colorPlataforma: 'bg-blue-100'
         }
     ])
     
     const [loading, setLoading] = useState<string | null>(null)
+    const [showWhatsAppQR, setShowWhatsAppQR] = useState(false)
 
-    // Función para conectar/desconectar cuenta (preparada para API)
+    // Obtener estado real de los bots del backend
+    useEffect(() => {
+        const fetchBotsStatus = async () => {
+            try {
+                const response = await fetch('http://localhost:3001/api/bots/status')
+                if (response.ok) {
+                    const status = await response.json()
+                    
+                    setCuentas(prev => prev.map(cuenta => {
+                        let conectada = false
+                        let fechaConexion = undefined
+                        
+                        if (cuenta.plataforma === 'whatsapp' && status.whatsapp.active) {
+                            conectada = true
+                            fechaConexion = new Date().toISOString()
+                        } else if (cuenta.plataforma === 'instagram' && status.instagram.active) {
+                            conectada = true
+                            fechaConexion = new Date().toISOString()
+                        } else if (cuenta.plataforma === 'facebook' && status.facebook.active) {
+                            conectada = true
+                            fechaConexion = new Date().toISOString()
+                        } else if (cuenta.plataforma === 'telegram' && status.telegram.active) {
+                            conectada = true
+                            fechaConexion = new Date().toISOString()
+                        }
+                        
+                        return { ...cuenta, conectada, fechaConexion }
+                    }))
+                }
+            } catch (error) {
+                console.error('Error obteniendo estado de bots:', error)
+            }
+        }
+
+        fetchBotsStatus()
+        const interval = setInterval(fetchBotsStatus, 5000)
+        return () => clearInterval(interval)
+    }, [])
+
+    // Función para conectar/desconectar cuenta
     const toggleConexion = useCallback(async (id: string) => {
         const cuenta = cuentas.find(c => c.id === id)
         if (!cuenta) return
 
+        // Para WhatsApp, mostrar modal con QR
+        if (cuenta.plataforma === 'whatsapp' && !cuenta.conectada) {
+            setShowWhatsAppQR(true)
+            return
+        }
+
         setLoading(id)
         
         try {
-            // TODO: Reemplazar con llamada a API real
-            const response = await simulateAPICall({
-                action: cuenta.conectada ? 'disconnect' : 'connect',
-                platform: cuenta.plataforma,
-                account_id: id
+            const endpoint = cuenta.conectada 
+                ? `/bots/${cuenta.plataforma}/stop` 
+                : `/bots/${cuenta.plataforma}/start`
+            
+            const response = await fetch(`http://localhost:3001/api${endpoint}`, {
+                method: 'POST'
             })
 
-            if (response.success) {
-                setCuentas(prevCuentas => 
-                    prevCuentas.map(c => 
-                        c.id === id 
-                            ? { 
-                                ...c, 
-                                conectada: !c.conectada,
-                                fechaConexion: !c.conectada ? new Date().toISOString() : undefined,
-                                webhook_url: !c.conectada ? response.webhook_url : undefined,
-                                api_token: !c.conectada ? response.api_token : undefined
+            if (response.ok) {
+                // Actualizar estado después de un breve delay para que el backend se actualice
+                setTimeout(async () => {
+                    const statusResponse = await fetch('http://localhost:3001/api/bots/status')
+                    if (statusResponse.ok) {
+                        const status = await statusResponse.json()
+                        
+                        setCuentas(prev => prev.map(c => {
+                            if (c.plataforma === cuenta.plataforma) {
+                                const isActive = status[cuenta.plataforma]?.active || false
+                                return {
+                                    ...c,
+                                    conectada: isActive,
+                                    fechaConexion: isActive ? new Date().toISOString() : undefined
+                                }
                             }
-                            : c
-                    )
-                )
+                            return c
+                        }))
+                    }
+                    setLoading(null)
+                }, 1000)
+            } else {
+                setLoading(null)
             }
         } catch (error) {
             console.error('Error al cambiar conexión:', error)
-            // TODO: Mostrar notificación de error
-        } finally {
             setLoading(null)
         }
     }, [cuentas])
 
-    // Simulación de llamada API (reemplazar con fetch real)
-    const simulateAPICall = async (data: any): Promise<any> => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                resolve({
-                    success: true,
-                    webhook_url: `https://api.panelbb.com/webhook/${data.platform}`,
-                    api_token: `${data.platform}_token_${Math.random().toString(36).substring(7)}`
-                })
-            }, 1500)
-        })
-    }
-
-    // Función para configurar webhook (preparada para API)
-    const configurarWebhook = useCallback(async (id: string) => {
-        setLoading(id)
-        
-        try {
-            // TODO: Reemplazar con llamada a API real para configurar webhook
-            const response = await fetch('/api/webhook/configure', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ account_id: id })
-            })
-            
+    const handleWhatsAppSuccess = useCallback(() => {
+        // Actualizar estado cuando WhatsApp se conecte exitosamente
+        setTimeout(async () => {
+            const response = await fetch('http://localhost:3001/api/bots/status')
             if (response.ok) {
-                // TODO: Actualizar estado o mostrar éxito
-                console.log('Webhook configurado exitosamente')
+                const status = await response.json()
+                setCuentas(prev => prev.map(c => {
+                    if (c.plataforma === 'whatsapp') {
+                        return {
+                            ...c,
+                            conectada: status.whatsapp.active,
+                            fechaConexion: status.whatsapp.active ? new Date().toISOString() : undefined
+                        }
+                    }
+                    return c
+                }))
             }
-        } catch (error) {
-            console.error('Error configurando webhook:', error)
-        } finally {
-            setLoading(null)
-        }
+        }, 2000)
     }, [])
 
     const formatearFecha = (fecha?: string) => {
@@ -237,15 +267,6 @@ export default function ConfiguracionPage() {
 
                                 {/* Botones de acción */}
                                 <div className="flex flex-col space-y-2">
-                                    {cuenta.conectada && (
-                                        <button
-                                            onClick={() => configurarWebhook(cuenta.id)}
-                                            disabled={loading === cuenta.id}
-                                            className="bg-white text-gray-600 hover:bg-blue-200 border-2 border-gray-200 hover:border-blue-200 px-4 py-2 font-medium rounded-lg transition-colors disabled:opacity-50"
-                                        >
-                                            Configuración
-                                        </button>
-                                    )}
                                     
                                     <button
                                         onClick={() => toggleConexion(cuenta.id)}
@@ -299,6 +320,13 @@ export default function ConfiguracionPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Modal de WhatsApp QR */}
+            <WhatsAppQRModal 
+                isOpen={showWhatsAppQR}
+                onClose={() => setShowWhatsAppQR(false)}
+                onSuccess={handleWhatsAppSuccess}
+            />
         </Layout>
     )
 }

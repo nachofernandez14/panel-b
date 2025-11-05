@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Layout } from "@/components"
+import { MessageService, Chat as ApiChat } from '@/lib/apiService'
 
 interface Tag {
   id: string
@@ -64,10 +65,11 @@ interface Chat {
   avatar: string
   unreadCount: number
   isOnline: boolean
-  platform: 'whatsapp' | 'instagram' | 'facebook' | 'telegram'
+  platform: string
   platformIcon: string
   platformColor: string
   tags: string[]
+  messages?: any[]
 }
 
 interface Message {
@@ -78,92 +80,57 @@ interface Message {
   status: 'sent' | 'delivered' | 'read'
 }
 
-const mockChats: Chat[] = [
-  {
-    id: '1',
-    name: 'María García',
-    lastMessage: 'Hola, ¿cómo estás?',
-    timestamp: '10:30',
-    avatar: '👩‍💼',
-    unreadCount: 2,
-    isOnline: true,
-    platform: 'whatsapp',
-    platformIcon: '/icons/whatsapp.png',
-    platformColor: 'bg-white',
-    tags: ['1'] // Cliente Potencial
-  },
-  {
-    id: '2',
-    name: 'Carlos López',
-    lastMessage: 'Perfecto, nos vemos mañana',
-    timestamp: '09:15',
-    avatar: '👨‍💻',
-    unreadCount: 0,
-    isOnline: false,
-    platform: 'instagram',
-    platformIcon: '/icons/instagram.png',
-    platformColor: 'bg-white',
-    tags: ['2'] // Venta Cerrada
-  },
-  {
-    id: '3',
-    name: 'Ana Martínez',
-    lastMessage: 'Gracias por la información',
-    timestamp: 'Ayer',
-    avatar: '👩‍🎨',
-    unreadCount: 1,
-    isOnline: true,
-    platform: 'facebook',
-    platformIcon: '/icons/facebook.png',
-    platformColor: 'bg-white',
-    tags: ['4'] // Seguimiento
-  },
-  {
-    id: '4',
-    name: 'Pedro Rodríguez',
-    lastMessage: '¿Tienes el reporte listo?',
-    timestamp: 'Ayer',
-    avatar: '👨‍🔧',
-    unreadCount: 0,
-    isOnline: false,
-    platform: 'telegram',
-    platformIcon: '/icons/telegram.png',
-    platformColor: 'bg-white',
-    tags: ['5'] // Soporte Técnico
-  }
-]
-
-const mockMessages: { [chatId: string]: Message[] } = {
-  '1': [
-    { id: '1', text: 'Hola, ¿cómo estás?', timestamp: '10:25', sender: 'other', status: 'read' },
-    { id: '2', text: '¿Tienes tiempo para una reunión?', timestamp: '10:30', sender: 'other', status: 'delivered' }
-  ],
-  '2': [
-    { id: '1', text: 'Me gusta tu última publicación 📷', timestamp: '09:10', sender: 'other', status: 'read' },
-    { id: '2', text: 'Perfecto, nos vemos mañana', timestamp: '09:15', sender: 'other', status: 'read' }
-  ],
-  '3': [
-    { id: '1', text: 'Te envío la información solicitada', timestamp: 'Ayer', sender: 'me', status: 'read' },
-    { id: '2', text: 'Gracias por la información', timestamp: 'Ayer', sender: 'other', status: 'read' }
-  ],
-  '4': [
-    { id: '1', text: '¿Tienes el reporte listo?', timestamp: 'Ayer', sender: 'other', status: 'read' }
-  ]
-}
-
 export default function BandEntrada() {
-  const [selectedChat, setSelectedChat] = useState<string>('1')
+  const [chats, setChats] = useState<Chat[]>([])
+  const [selectedChat, setSelectedChat] = useState<string>('')
   const [newMessage, setNewMessage] = useState('')
-  const [platformFilter, setPlatformFilter] = useState<'all' | 'whatsapp' | 'instagram' | 'facebook' | 'telegram'>('all')
+  const [platformFilter, setPlatformFilter] = useState<string>('all')
   const [tagFilter, setTagFilter] = useState<string>('all')
-  const [searchTerm, setSearchTerm] = useState('') // ✅ Nuevo estado para búsqueda
+  const [searchTerm, setSearchTerm] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
-  const currentChat = mockChats.find(chat => chat.id === selectedChat)
-  const currentMessages = mockMessages[selectedChat] || []
+  // Cargar conversaciones desde el backend
+  useEffect(() => {
+    const cargarConversaciones = async () => {
+      try {
+        const response = await MessageService.getConversaciones()
+        
+        console.log('Response from backend:', response)
+        
+        if (response.success && response.data && response.data.conversaciones) {
+          const conversaciones = response.data.conversaciones
+          console.log('Conversaciones recibidas:', conversaciones.length)
+          
+          setChats(conversaciones)
+          
+          // Seleccionar primera conversación si hay alguna
+          if (conversaciones.length > 0 && !selectedChat) {
+            setSelectedChat(conversaciones[0].id)
+          }
+        } else {
+          setChats([])
+        }
+      } catch (error) {
+        console.error('Error cargando conversaciones:', error)
+        setChats([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    cargarConversaciones()
+    
+    // Actualizar cada 5 segundos
+    const interval = setInterval(cargarConversaciones, 5000)
+    return () => clearInterval(interval)
+  }, [selectedChat])
+
+  const currentChat = chats.find(chat => chat.id === selectedChat)
+  const currentMessages = currentChat?.messages || []
   
   // Función para filtrar chats con etiquetas
   const getFilteredChats = () => {
-    let filtered = mockChats
+    let filtered = chats
 
     // Filtro por termino de busqueda
     if(searchTerm.trim()){
@@ -191,11 +158,39 @@ export default function BandEntrada() {
   const clearSearch = () => {
     setSearchTerm('')
   }
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      // Aquí agregarías la lógica para enviar el mensaje
-      console.log('Enviando mensaje:', newMessage)
-      setNewMessage('')
+  const handleSendMessage = async () => {
+    if (newMessage.trim() && currentChat) {
+      const mensajeAEnviar = newMessage.trim()
+      setNewMessage('') // Limpiar input inmediatamente
+      
+      try {
+        const response = await fetch('http://localhost:3001/api/enviar-mensaje', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            platform: currentChat.platform,
+            chatId: currentChat.id,
+            texto: mensajeAEnviar
+          })
+        })
+
+        const data = await response.json()
+        
+        if (data.success) {
+          console.log('✅ Mensaje enviado exitosamente')
+          // El mensaje se agregará automáticamente cuando el backend lo guarde y el polling lo detecte
+        } else {
+          console.error('❌ Error enviando mensaje:', data.error)
+          alert(`Error: ${data.error}`)
+          setNewMessage(mensajeAEnviar) // Restaurar mensaje si falló
+        }
+      } catch (error) {
+        console.error('❌ Error de red:', error)
+        alert('Error de conexión con el servidor')
+        setNewMessage(mensajeAEnviar) // Restaurar mensaje si falló
+      }
     }
   }
 
@@ -293,14 +288,26 @@ export default function BandEntrada() {
 
           {/* Lista de chats */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {filteredChats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => setSelectedChat(chat.id)}
-                className={`p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors shadow-sm ${
-                  selectedChat === chat.id ? 'bg-blue-100 border-blue-500' : 'bg-white'
-                }`}
-              >
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                <p>Cargando conversaciones...</p>
+              </div>
+            ) : filteredChats.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <div className="text-6xl mb-4">📭</div>
+                <p className="text-lg font-medium">No hay conversaciones</p>
+                <p className="text-sm mt-2">Conecta tus bots para recibir mensajes</p>
+              </div>
+            ) : (
+              filteredChats.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => setSelectedChat(chat.id)}
+                  className={`p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors shadow-sm ${
+                    selectedChat === chat.id ? 'bg-blue-100 border-blue-500' : 'bg-white'
+                  }`}
+                >
                 <div className="flex items-center space-x-3">
                   <div className="relative">
                     <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center text-xl">
@@ -351,7 +358,8 @@ export default function BandEntrada() {
                   )}
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -402,34 +410,44 @@ export default function BandEntrada() {
 
               {/* Área de mensajes */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-100">
-                {currentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                        message.sender === 'me'
-                          ? 'bg-blue-500 text-white'
-                          : 'bg-gray-200 text-gray-800'
-                      }`}
-                    >
-                      <p>{message.text}</p>
-                      <div className={`text-xs mt-1 ${
-                        message.sender === 'me' ? 'text-blue-100' : 'text-gray-500'
-                      }`}>
-                        {message.timestamp}
-                        {message.sender === 'me' && (
-                          <span className="ml-1">
-                            {message.status === 'sent' && '✓'}
-                            {message.status === 'delivered' && '✓✓'}
-                            {message.status === 'read' && '✓✓'}
-                          </span>
-                        )}
-                      </div>
+                {currentMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center text-gray-500">
+                      <div className="text-5xl mb-3">💬</div>
+                      <p className="text-lg">No hay mensajes aún</p>
+                      <p className="text-sm mt-2">Los mensajes aparecerán aquí cuando lleguen</p>
                     </div>
                   </div>
-                ))}
+                ) : (
+                  currentMessages.map((message: any) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.sender === 'me' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                          message.sender === 'me'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-200 text-gray-800'
+                        }`}
+                      >
+                        <p>{message.text}</p>
+                        <div className={`text-xs mt-1 ${
+                          message.sender === 'me' ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
+                          {message.timestamp}
+                          {message.sender === 'me' && (
+                            <span className="ml-1">
+                              {message.status === 'sent' && '✓'}
+                              {message.status === 'delivered' && '✓✓'}
+                              {message.status === 'read' && '✓✓'}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               {/* Input para escribir mensajes */}

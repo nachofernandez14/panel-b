@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "dev:full": "concurrently \"npm run backend:dev\" \"npm run dev\"",
+    "backend:dev": "cd ../backend && npm run dev",
+    "backend:start": "cd ../backend && npm start"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
@@ -23,6 +26,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^8.2.2",
     "eslint": "^9",
     "eslint-config-next": "15.5.6",
     "tailwindcss": "^4",
