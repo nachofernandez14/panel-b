@@ -15,9 +15,10 @@ interface NavBarProps {
 }
 
 const defaultNavItems: NavItem[] = [
-  { href: '/', label: 'Bandeja de entradas', icon: '' },
-  { href: '/dashboard', label: 'Etiquetas', icon: '' }, 
-  { href: '/configuracion', label: 'Configuracion', icon: '' },
+  { href: '/', label: 'Bandeja de entradas', icon: '📥' },
+  { href: '/dashboard', label: 'Etiquetas', icon: '🏷️' }, 
+  { href: '/configuracion/agente', label: 'Agente IA', icon: '🤖' },
+  { href: '/configuracion', label: 'Redes Sociales', icon: '🔗' },
 ]
 
 export default function NavBar({ items = defaultNavItems, className = '' }: NavBarProps) {

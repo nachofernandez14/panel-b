@@ -28,10 +28,20 @@ const defaultNavItems: NavItem[] = [
     href: '/dashboard', 
     label: 'Etiquetas', 
     image: '/icons/tags.svg'
-  }, 
+  },
+  { 
+    href: '/configuracion/agente', 
+    label: 'Agente IA', 
+    icon: '🤖'
+  },
+  { 
+    href: '/configuracion/humano', 
+    label: 'Agente Humano', 
+    icon: '👤'
+  },
   { 
     href: '/configuracion', 
-    label: 'Configuración', 
+    label: 'Redes Sociales', 
     image: '/icons/settings.png'
   }
 ]

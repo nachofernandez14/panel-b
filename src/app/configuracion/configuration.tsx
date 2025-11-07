@@ -190,8 +190,9 @@ export default function ConfiguracionPage() {
         <Layout>
             <div className="p-6 bg-gray-100 min-h-screen">
                 <div className="max-w-4xl mx-auto">
-                    <h1 className="text-3xl font-bold text-gray-800 mb-6">Conexiones de Redes Sociales</h1>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">🔗 Conexiones de Redes Sociales</h1>
                     <p className="mb-6 text-gray-600">Gestiona las conexiones de tus redes sociales.</p>                    
+                    
                     {/* Resumen */}
                     <div className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-4 mb-4">
                         <h2 className="text-xl font-semibold text-gray-800 mb-4">Estado de Conexiones</h2>

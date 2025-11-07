@@ -70,6 +70,7 @@ interface Chat {
   platformColor: string
   tags: string[]
   messages?: any[]
+  controlHumano?: boolean
 }
 
 interface Message {
@@ -191,6 +192,42 @@ export default function BandEntrada() {
         alert('Error de conexión con el servidor')
         setNewMessage(mensajeAEnviar) // Restaurar mensaje si falló
       }
+    }
+  }
+
+  const toggleControlHumano = async (chatId: string) => {
+    const chat = chats.find(c => c.id === chatId)
+    if (!chat) return
+
+    const nuevoEstado = !chat.controlHumano
+
+    try {
+      const endpoint = nuevoEstado ? 'tomar-control' : 'liberar-control'
+      const response = await fetch(`http://localhost:3001/api/chat/${chatId}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform: chat.platform
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        // Actualizar estado local
+        setChats(chats.map(c => 
+          c.id === chatId ? { ...c, controlHumano: nuevoEstado } : c
+        ))
+        console.log(`✅ ${nuevoEstado ? 'Control tomado' : 'Control liberado'}`)
+      } else {
+        console.error('❌ Error cambiando control:', data.error)
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('❌ Error de red:', error)
+      alert('Error de conexión con el servidor')
     }
   }
 
@@ -401,6 +438,21 @@ export default function BandEntrada() {
                     ))}
                   </div>
                 </div>
+                
+                {/* Botón Tomar/Liberar Control */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => toggleControlHumano(currentChat.id)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2 ${
+                      currentChat.controlHumano
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    <span>{currentChat.controlHumano ? '✓ Control Activo' : '👤 Tomar Control'}</span>
+                  </button>
+                </div>
+                
                 {/* Información adicional de la plataforma */}
                 <div className="text-right">
                   <p className="text-xs text-gray-500">Conversación desde</p>
@@ -452,6 +504,14 @@ export default function BandEntrada() {
 
               {/* Input para escribir mensajes */}
               <div className="p-4 border-t border-gray-200 bg-gray-100">
+                {/* Indicador de control humano */}
+                {currentChat.controlHumano && (
+                  <div className="mb-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+                    <span className="text-green-600 font-medium">✓ Control Activo</span>
+                    <span className="text-green-700 text-sm">El bot NO responderá automáticamente</span>
+                  </div>
+                )}
+                
                 <div className="flex space-x-2">
                   <input
                     type="text"
